@@ -45,11 +45,27 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             opcode: 0,
-            keypad: [false; 16] ,
-            screen: [false; 64*32] ,
+            keypad: [false; 16],
+            screen: [false; 64*32]
         };
         new_chip8.memory[0x050..0x09F].copy_from_slice(&FONT);
         new_chip8
+    }
+
+    // Reset everything to original state
+    pub fn reset(&mut self) {
+        self.memory = [0; 4096];
+        self.pc = 0x200;
+        self.i = 0;
+        self.register = [0; 16];
+        self.stack = [0; 16];
+        self.stack_pt = 0;
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.opcode = 0;
+        self.keypad = [false; 16];
+        self.screen = [false; 64*32];
+        self.memory[0x050..0x09F].copy_from_slice(&FONT);
     }
 
     fn push(&mut self, val: u16) {
