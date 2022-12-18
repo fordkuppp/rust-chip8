@@ -30,4 +30,14 @@ impl Chip8 {
             screen: [false; 64*32] ,
         }
     }
+
+    fn push(&mut self, val: u16) {
+        self.stack[self.stack_pt] = val;
+        self.stack_pt += 1;
+    }
+
+    fn pop(&mut self) {
+        self.stack_pt -= 1;
+        self.stack[self.stack_pt];
+    }
 }
