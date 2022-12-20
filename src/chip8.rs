@@ -48,7 +48,7 @@ impl Chip8 {
             keypad: [false; 16],
             screen: [false; 64*32]
         };
-        new_chip8.memory[0x050..0x09F].copy_from_slice(&FONT);
+        new_chip8.memory[0x050..0x09F].copy_from_slice(&FONTSET);
         new_chip8
     }
 
@@ -65,7 +65,39 @@ impl Chip8 {
         self.opcode = 0;
         self.keypad = [false; 16];
         self.screen = [false; 64*32];
-        self.memory[0x050..0x09F].copy_from_slice(&FONT);
+        self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
+    }
+
+    pub fn tick(&mut self) {
+        // Fetch
+        let opcode = self.fetch();
+        // Decode
+        let nibbles = self.decode(opcode);
+        // Execute
+    }
+
+    // Fetch and increment program counter by 2
+    fn fetch(&mut self) -> u16 {
+        let opcode = (self.ram[self.pc] as u16) << 8 | (self.ram[self.pc + 1] as u16);
+        self.pc += 2;
+        opcode
+    }
+
+    // Decode into 4 nibbles tuple
+    fn decode(&mut self, opcode: u16) -> (u16, u16, u16, u16) {
+        (
+            (opcode & 0xF000) >> 12,
+            (opcode & 0x0F00) >> 8,
+            (opcode & 0x00F0) >> 4,
+            (opcode & 0x000F)
+        )
+    }
+
+    // Execute opcode
+    fn execute(&mut self, nibbles: (u16, u16, u16, u16)) {
+        match nibbles {
+            (_,_,_,_) => unimplemented!("Unimplemented")
+        }
     }
 
     fn push(&mut self, val: u16) {
