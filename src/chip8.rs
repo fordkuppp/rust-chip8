@@ -21,11 +21,11 @@ const FONTSET: [u8; 80] = [
 
 pub struct Chip8 {
     pub memory: [u8; 4096],     // memory
-    pub pc: u16,                // program counter
+    pub pc: usize,              // program counter
     pub i: u16,                 // index register
     pub register: [u8; 16],     // register (V0 to VF)
     pub stack: [u16; 16],       // LIFO stack
-    pub stack_pt: u8,           // stack pointer
+    pub stack_pt: usize,        // stack pointer
     pub delay_timer: u8,        // delay timer
     pub sound_timer: u8,        // sound timer
     pub opcode: u16,            // current opcode
@@ -48,7 +48,7 @@ impl Chip8 {
             keypad: [false; 16],
             screen: [false; 64*32]
         };
-        new_chip8.memory[0x050..0x09F].copy_from_slice(&FONTSET);
+        new_chip8.memory[0x050..=0x09F].copy_from_slice(&FONTSET);
         new_chip8
     }
 
@@ -78,7 +78,7 @@ impl Chip8 {
 
     // Fetch and increment program counter by 2
     fn fetch(&mut self) -> u16 {
-        let opcode = (self.ram[self.pc] as u16) << 8 | (self.ram[self.pc + 1] as u16);
+        let opcode = (self.memory[self.pc] as u16) << 8 | (self.memory[self.pc + 1] as u16);
         self.pc += 2;
         opcode
     }
