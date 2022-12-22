@@ -18,10 +18,8 @@ fn main() {
     rom.read_to_end(&mut buf).unwrap();
     chip8.load(&buf);
 
-    let sdl_context = sdl2::init().unwrap();
-    let mut display = Display::new(&sdl_context);
-    let mut input = Input::new(&sdl_context);
-
+    let mut display = chip8.display;
+    let mut input = chip8.input;
     loop {
         let key_result = input.poll();
         if key_result.is_err() {

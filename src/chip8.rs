@@ -1,5 +1,8 @@
 // Reference: https://aquova.net/chip8/chip8.pdf, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
+use crate::display::Display;
+use crate::input::Input;
+
 const FONTSET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -29,12 +32,13 @@ pub struct Chip8 {
     pub delay_timer: u8,        // delay timer
     pub sound_timer: u8,        // sound timer
     pub opcode: u16,            // current opcode
-    pub keypad: [bool; 16],     // keypad state
-    pub screen: [bool; 64*32]   // screen state
+    pub input: Input,     // keypad state
+    pub display: Display   // screen state
 }
 
 impl Chip8 {
     pub fn new() -> Chip8 {
+        let sdl_context = sdl2::init().unwrap();
         let mut new_chip8 = Chip8 {
             memory: [0; 4096],
             pc: 0x200,          // start at 0x200 per original chip-8
@@ -45,8 +49,8 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             opcode: 0,
-            keypad: [false; 16],
-            screen: [false; 64*32]
+            input: Input::new(&sdl_context),
+            display: Display::new(&sdl_context),
         };
         new_chip8.memory[0x050..=0x09F].copy_from_slice(&FONTSET);
         new_chip8
@@ -54,6 +58,7 @@ impl Chip8 {
 
     // Reset everything to original state
     pub fn reset(&mut self) {
+        let sdl_context = sdl2::init().unwrap();
         self.memory = [0; 4096];
         self.pc = 0x200;
         self.i = 0;
@@ -63,8 +68,8 @@ impl Chip8 {
         self.delay_timer = 0;
         self.sound_timer = 0;
         self.opcode = 0;
-        self.keypad = [false; 16];
-        self.screen = [false; 64*32];
+        self.input = Input::new(&sdl_context);
+        self.display = Display::new(&sdl_context);
         self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
     }
 
@@ -101,7 +106,9 @@ impl Chip8 {
     // Execute opcode
     fn execute(&mut self, nibbles: (u16, u16, u16, u16)) {
         match nibbles {
-            (_,_,_,_) => unimplemented!("Unimplemented")
+            (0, 0, 0, 0) => return,
+            (0, 0, 0xE, 0) => return,
+            (_, _, _, _) => unimplemented!("Unimplemented")
         }
     }
 
