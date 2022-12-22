@@ -10,32 +10,28 @@ mod input;
 
 fn main() {
     println!("Hello, world!");
+    // TODO: Set up render system and input
+    let mut display = Display::new();
+    // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
-
-    // TODO: take path from argument
     let mut rom = File::open(&"roms/IBM Logo.ch8").expect("Unable to open file");
     let mut buf = Vec::new();
     rom.read_to_end(&mut buf).unwrap();
     chip8.load(&buf);
 
-    let sdl_context = sdl2::init().unwrap();
-    let mut display = Display::new(&sdl_context);
-    let mut input = Input::new(&sdl_context);
-
     loop {
-        let key_result = input.poll();
-        if key_result.is_err() {
-            println!("Quitting");
-            break
+        // Emulate one cycle
+        chip8.tick();
+        if chip8.draw_flag {
+            display.draw(chip8.screen)
         }
-        if key_result.unwrap() == 0x0 {
-            println!("good!");
-        }
-        let sprite = vec![
-            [14,13],
-            [0,1],
-            [3,4]
-        ];
-        display.draw(&sprite);
+
+        // TODO: If draw flag is set then update display
+        // let sprite = vec![
+        //     [14,13],
+        //     [0,1],
+        //     [3,4]
+        // ];
+        // display.draw(&sprite);
     }
 }
