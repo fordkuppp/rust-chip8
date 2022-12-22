@@ -26,36 +26,31 @@ const FONTSET: [u8; 80] = [
 ];
 
 pub struct Chip8 {
-    pub memory: [u8; 4096],     // memory
-    pub pc: u16,                // program counter
-    pub i: u16,                 // index register
-    pub register: [u8; 16],     // register (V0 to VF)
-    pub stack: [u16; 16],       // LIFO stack
-    pub stack_pt: usize,        // stack pointer
-    pub delay_timer: u8,        // delay timer
-    pub sound_timer: u8,        // sound timer
-    pub opcode: u16,            // current opcode
-    pub input: Input,           // input
-    pub display: Display,       // display
-    pub framebuffer: [bool; WIDTH * HEIGHT]
+    pub opcode: u16,
+    pub memory: [u8; 4096],
+    pub v_register: [u8; 16],
+    pub i_register: u16,
+    pub program_counter: u16,
+    pub display: [bool; WIDTH*HEIGHT],
+    pub delay_timer: u8,
+    pub sound_timer: u8,
+    pub stack: [u16; 16],
+    pub stack_pointer: u16,
 }
 
 impl Chip8 {
     pub fn new() -> Chip8 {
-        let sdl_context = sdl2::init().unwrap();
         let mut new_chip8 = Chip8 {
+            opcode: 0,
             memory: [0; 4096],
-            pc: 0x200,          // start at 0x200 per original chip-8
-            i: 0,
-            register: [0; 16],
-            stack: [0; 16],
-            stack_pt: 0,
+            v_register: [0; 16],
+            i_register: 0,
+            program_counter: 0x200,         // start at 0x200 per original chip-8
+            display: [false; WIDTH*HEIGHT],
             delay_timer: 0,
             sound_timer: 0,
-            opcode: 0,
-            input: Input::new(&sdl_context),
-            display: Display::new(&sdl_context),
-            framebuffer: [false; WIDTH * HEIGHT],
+            stack: [0; 16],
+            stack_pointer: 0,
         };
         new_chip8.memory[0x050..=0x09F].copy_from_slice(&FONTSET);
         new_chip8
@@ -63,43 +58,42 @@ impl Chip8 {
 
     // Reset everything to original state
     pub fn reset(&mut self) {
-        let sdl_context = sdl2::init().unwrap();
+        self.opcode = 0;
         self.memory = [0; 4096];
-        self.pc = 0x200;
-        self.i = 0;
-        self.register = [0; 16];
-        self.stack = [0; 16];
-        self.stack_pt = 0;
+        self.v_register = [0; 16];
+        self.i_register = 0;
+        self.program_counter = 0x200;        // start at 0x200 per original chip-8
+        self.display = [false; WIDTH*HEIGHT];
         self.delay_timer = 0;
         self.sound_timer = 0;
-        self.opcode = 0;
-        self.input = Input::new(&sdl_context);
-        self.display = Display::new(&sdl_context);
-        self.framebuffer = [false; WIDTH * HEIGHT];
+        self.stack = [0; 16];
+        self.stack_pointer = 0;
         self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
     }
 
-    // Load data into memory
+    // Load data into memory TODO: Take in path instead
     pub fn load(&mut self, data: &[u8]) {
         self.memory[0x200..(0x200 + data.len())].copy_from_slice(data);
     }
 
+    // Emulate one cycle
     pub fn tick(&mut self) {
         // Fetch
-        self.set_opcode();
+        let opcode = self.fetch();
         // Decode
         let nibbles = self.decode();
         // Execute
         self.execute(nibbles);
     }
 
-    // Set opcode and increment program counter by 2
-    fn set_opcode(&mut self) {
-        self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc) as usize + 1] as u16);
-        self.pc += 2;
+    // Chip-8 opcode is 2 bytes long, so merge 2 bytes from memory and increment program counter by 2
+    fn fetch(&mut self) -> u16{
+        self.opcode = (self.memory[self.pc]) << 8 | (self.memory[(self.pc) + 1]);
+        self.program_counter += 2;
+        opcode
     }
 
-    // Decode into 4 nibbles tuple
+    // Decode into tuple of 4 nibbles
     fn decode(&mut self) -> (u16, u16, u16, u16) {
         (
             (self.opcode & 0xF000) >> 12,
@@ -123,9 +117,6 @@ impl Chip8 {
     fn execute(&mut self, nibbles: (u16, u16, u16, u16)) {
         let nnn = (self.opcode & 0x0FFF);
         let nn = (self.opcode & 0x00FF) as u8;
-        let x = nibbles.1 as usize;
-        let y = nibbles.2 as usize;
-        let n = nibbles.3 as usize;
         match nibbles {
             (0, 0, 0, 0) => return,
             (0, 0, 0xE, 0) => self.op_00e0(),
