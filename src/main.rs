@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use crate::chip8::Chip8;
 use crate::display::Display;
 use crate::input::Input;
@@ -9,6 +11,12 @@ mod input;
 fn main() {
     println!("Hello, world!");
     let mut chip8 = Chip8::new();
+
+    // TODO: take path from argument
+    let mut rom = File::open(&"roms/IBM Logo.ch8").expect("Unable to open file");
+    let mut buf = Vec::new();
+    rom.read_to_end(&mut buf).unwrap();
+    chip8.load(&buf);
 
     let sdl_context = sdl2::init().unwrap();
     let mut display = Display::new(&sdl_context);

@@ -68,6 +68,11 @@ impl Chip8 {
         self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
     }
 
+    // Load data into memory
+    pub fn load(&mut self, data: &[u8]) {
+        self.memory[0x200..(0x200 + data.len())].copy_from_slice(data);
+    }
+
     pub fn tick(&mut self) {
         // Fetch
         let opcode = self.fetch();
