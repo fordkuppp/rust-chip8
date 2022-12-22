@@ -28,13 +28,18 @@ impl Display {
     }
 
     // Example input vec![ [14,13],[0,1],[3,4] ];
-    pub fn draw(&mut self, sprite: &[[u32; 2]]) {
+    pub fn draw(&mut self, sprite: &Vec<[usize; 2]>, color: Color) {
         let points: Vec<Point> = sprite.iter()
             .map(|p| Point::new(p[0] as i32, p[1] as i32))
             .collect::<Vec<Point>>();
-        self.canvas.set_draw_color(Color::RGB(255, 255, 255));
+        self.canvas.set_draw_color(Color::RGB(0, 255, 0));
         self.canvas.draw_points(points.as_slice()).unwrap();
         self.canvas.present();
+    }
+
+    pub fn clear(&mut self) {
+        self.canvas.set_draw_color(Color::RGB(0, 0, 0));
+        self.canvas.clear();
     }
 }
 // pub fn show() {

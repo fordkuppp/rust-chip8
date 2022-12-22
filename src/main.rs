@@ -18,10 +18,10 @@ fn main() {
     rom.read_to_end(&mut buf).unwrap();
     chip8.load(&buf);
 
-    let mut display = chip8.display;
-    let mut input = chip8.input;
+    // let mut display = &chip8.display;
+    // let mut input = &chip8.input;
     loop {
-        let key_result = input.poll();
+        let key_result = chip8.input.poll();
         if key_result.is_err() {
             println!("Quitting");
             break
@@ -29,11 +29,12 @@ fn main() {
         if key_result.unwrap() == 0x0 {
             println!("good!");
         }
-        let sprite = vec![
-            [14,13],
-            [0,1],
-            [3,4]
-        ];
-        display.draw(&sprite);
+        chip8.tick();
+        // let sprite = vec![
+        //     [14,13],
+        //     [0,1],
+        //     [3,4]
+        // ];
+        // display.draw(&sprite);
     }
 }
