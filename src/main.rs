@@ -11,7 +11,7 @@ mod input;
 fn main() {
     println!("Hello, world!");
     // TODO: Set up render system and input
-
+    let mut display = Display::new();
     // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
     let mut rom = File::open(&"roms/IBM Logo.ch8").expect("Unable to open file");
@@ -22,6 +22,9 @@ fn main() {
     loop {
         // Emulate one cycle
         chip8.tick();
+        if chip8.draw_flag {
+            display.draw(chip8.screen)
+        }
 
         // TODO: If draw flag is set then update display
         // let sprite = vec![

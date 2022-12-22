@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 sdl2 = "0.35.2"
-rand = "0.8.5"
+pixels = "0.11.0"
+winit = "0.27.5"

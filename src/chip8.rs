@@ -1,7 +1,6 @@
-// Reference: https://aquova.net/chip8/chip8.pdf, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+// Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
 use sdl2::pixels::Color;
-use crate::display::Display;
 use crate::input::Input;
 
 const WIDTH: usize = 64;
@@ -30,12 +29,14 @@ pub struct Chip8 {
     pub memory: [u8; 4096],
     pub v_register: [u8; 16],
     pub i_register: u16,
-    pub program_counter: u16,
-    pub display: [bool; WIDTH*HEIGHT],
+    pub pc: u16,
+    pub screen: [bool; WIDTH*HEIGHT],
     pub delay_timer: u8,
     pub sound_timer: u8,
     pub stack: [u16; 16],
-    pub stack_pointer: u16,
+    pub stack_ptr: u16,
+    pub key: [bool; 16],
+    pub draw_flag: bool,
 }
 
 impl Chip8 {
@@ -45,12 +46,14 @@ impl Chip8 {
             memory: [0; 4096],
             v_register: [0; 16],
             i_register: 0,
-            program_counter: 0x200,         // start at 0x200 per original chip-8
-            display: [false; WIDTH*HEIGHT],
+            pc: 0x200,         // start at 0x200 per original chip-8
+            screen: [false; WIDTH*HEIGHT],
             delay_timer: 0,
             sound_timer: 0,
             stack: [0; 16],
-            stack_pointer: 0,
+            stack_ptr: 0,
+            key: [false; 16],
+            draw_flag: false,
         };
         new_chip8.memory[0x050..=0x09F].copy_from_slice(&FONTSET);
         new_chip8
@@ -62,12 +65,14 @@ impl Chip8 {
         self.memory = [0; 4096];
         self.v_register = [0; 16];
         self.i_register = 0;
-        self.program_counter = 0x200;        // start at 0x200 per original chip-8
-        self.display = [false; WIDTH*HEIGHT];
+        self.pc = 0x200;        // start at 0x200 per original chip-8
+        self.screen = [false; WIDTH*HEIGHT];
         self.delay_timer = 0;
         self.sound_timer = 0;
         self.stack = [0; 16];
-        self.stack_pointer = 0;
+        self.stack_ptr = 0;
+        self.key = [false; 16];
+        self.draw_flag = false;
         self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
     }
 
@@ -78,8 +83,10 @@ impl Chip8 {
 
     // Emulate one cycle
     pub fn tick(&mut self) {
+        self.draw_flag = true;
+
         // Fetch
-        let opcode = self.fetch();
+        self.fetch();
         // Decode
         let nibbles = self.decode();
         // Execute
@@ -87,10 +94,9 @@ impl Chip8 {
     }
 
     // Chip-8 opcode is 2 bytes long, so merge 2 bytes from memory and increment program counter by 2
-    fn fetch(&mut self) -> u16{
-        self.opcode = (self.memory[self.pc]) << 8 | (self.memory[(self.pc) + 1]);
-        self.program_counter += 2;
-        opcode
+    fn fetch(&mut self) {
+        self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[self.pc as usize + 1] as u16);
+        self.pc += 2;
     }
 
     // Decode into tuple of 4 nibbles
@@ -104,13 +110,13 @@ impl Chip8 {
     }
 
     fn push(&mut self, val: u16) {
-        self.stack[self.stack_pt] = val;
-        self.stack_pt += 1;
+        self.stack[self.stack_ptr as usize] = val;
+        self.stack_ptr += 1;
     }
 
     fn pop(&mut self) {
-        self.stack_pt -= 1;
-        self.stack[self.stack_pt];
+        self.stack_ptr -= 1;
+        self.stack[self.stack_ptr as usize];
     }
 
     // Execute opcode
@@ -121,17 +127,18 @@ impl Chip8 {
             (0, 0, 0, 0) => return,
             (0, 0, 0xE, 0) => self.op_00e0(),
             (1, _, _, _) => self.op_1nnn(nnn),
-            (6, _, _, _) => self.op_6xnn(x, nn),
-            (7, _, _, _) => self.op_7xnn(x, nn),
+            (6, _, _, _) => self.op_6xnn(nibbles.1, nn),
+            (7, _, _, _) => self.op_7xnn(nibbles.1, nn),
             (0xA, _, _, _) => self.op_annn(nnn),
-            (0xD, _, _, _) => self.op_dxyn(x, y, n),
+            (0xD, _, _, _) => self.op_dxyn(nibbles.1, nibbles.2, nibbles.3),
             (_, _, _, _) => unimplemented!("Unimplemented")
         }
     }
 
     // Clear display
     fn op_00e0(&mut self) {
-        self.display.clear()
+        self.screen = [false; WIDTH*HEIGHT];
+        self.draw_flag = true;
     }
 
     // Jump to address NNN
@@ -140,48 +147,38 @@ impl Chip8 {
     }
 
     // Set register VX to NN
-    fn op_6xnn(&mut self, x: usize, nn: u8) {
-        self.register[x] = nn
+    fn op_6xnn(&mut self, x: u16, nn: u8) {
+        self.v_register[x as usize] = nn
     }
 
     // Add NN to register VX
-    fn op_7xnn(&mut self, x: usize, nn: u8) {
-        self.register[x] += nn
+    fn op_7xnn(&mut self, x: u16, nn: u8) {
+        self.v_register[x as usize] += nn
     }
 
     // Set index register to NNN
     fn op_annn(&mut self, nnn: u16) {
-        self.i = nnn
+        self.i_register = nnn
     }
 
     // Draw
-    fn op_dxyn(&mut self, x: usize, y: usize, n: usize) {
-        let x_coord = self.register[x];
-        let y_coord = self.register[y];
-        let mut flipped = false;
+    fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
+        let x_coord = self.v_register[x as usize];
+        let y_coord = self.v_register[y as usize];
+        let mut pixel = 0 as u16;
 
-        let mut points = Vec::new();
+        self.v_register[0xF] = 0;
         for y_line in 0..n {
-            let y = (self.register[y] + y_line as u8) as usize % 32;
-            let data = self.memory[(self.i + y_line as u16) as usize];
-            for x_line in 0..8 {
-                let x = (self.register[x] + x_line) as usize % 64;
-                println!("{} {}", x,y);
-                let idx = (x + 32 * y) as usize;
-                flipped |= self.framebuffer[idx];
-                self.framebuffer[idx] ^= true;
-                println!("{:?}",&idx);
-                points.push([x,y]);
+            pixel = self.memory[(self.i_register + y_line) as usize] as u16;
+            for x_line in 0..(8 as u16) {
+                if (pixel & (0x80 >> x_line)) != 0 {
+                    // Check collision
+                    if self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] == true {
+                        self.v_register[0xF] = 1;
+                    }
+                    self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] ^= true;
+                }
             }
         }
-        println!("{:?}", &self.framebuffer);
-        if flipped {
-            self.display.draw(&points, Color::RGB(255, 0, 0));
-            self.register[0xF] = 1;
-        } else {
-            self.display.draw(&points, Color::RGB(0, 255, 0));
-            self.register[0xF] = 0;
-        }
-
     }
 }
