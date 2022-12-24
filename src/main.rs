@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use winit::event_loop::EventLoop;
 use crate::chip8::Chip8;
 use crate::display::Display;
 use crate::input::Input;
@@ -11,7 +12,8 @@ mod input;
 fn main() {
     println!("Hello, world!");
     // TODO: Set up render system and input
-    let mut display = Display::new();
+    let event_loop = EventLoop::new();
+    let mut display = Display::new(event_loop);
     // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
     let mut rom = File::open(&"roms/IBM Logo.ch8").expect("Unable to open file");

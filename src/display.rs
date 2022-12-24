@@ -11,14 +11,11 @@ const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
 
 pub struct Display {
-    window: Window,
     pixels: Pixels,
-    framebuffer: [bool; WIDTH*HEIGHT],
 }
 
 impl Display {
-    pub fn new() -> Display {
-        let event_loop = EventLoop::new();
+    pub fn new(event_loop: EventLoop<()>) -> Display {
         let mut window = {
             let size = LogicalSize::new(WIDTH as u32, HEIGHT as u32);
             WindowBuilder::new()
@@ -35,7 +32,7 @@ impl Display {
         };
 
         pixels.render().unwrap();
-        Display{window, pixels, framebuffer: [false; WIDTH*HEIGHT]}
+        Display{pixels}
     }
 
     pub fn draw(&mut self, screen: [bool; 2048]) {
