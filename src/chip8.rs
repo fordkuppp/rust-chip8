@@ -1,7 +1,6 @@
 // Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
-use sdl2::pixels::Color;
-use crate::input::Input;
+use winit::event::Event;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
@@ -40,7 +39,7 @@ pub struct Chip8 {
 }
 
 impl Chip8 {
-    pub fn new() -> Chip8 {
+    pub fn new() -> Self {
         let mut new_chip8 = Chip8 {
             opcode: 0,
             memory: [0; 4096],
@@ -83,8 +82,7 @@ impl Chip8 {
 
     // Emulate one cycle
     pub fn tick(&mut self) {
-        self.draw_flag = true;
-
+        self.draw_flag = false;
         // Fetch
         self.fetch();
         // Decode
@@ -109,20 +107,10 @@ impl Chip8 {
         )
     }
 
-    fn push(&mut self, val: u16) {
-        self.stack[self.stack_ptr as usize] = val;
-        self.stack_ptr += 1;
-    }
-
-    fn pop(&mut self) {
-        self.stack_ptr -= 1;
-        self.stack[self.stack_ptr as usize];
-    }
-
     // Execute opcode
     fn execute(&mut self, nibbles: (u16, u16, u16, u16)) {
         let nnn = (self.opcode & 0x0FFF);
-        let nn = (self.opcode & 0x00FF) as u8;
+        let nn = (self.opcode & 0x00FF);
         match nibbles {
             (0, 0, 0, 0) => return,
             (0, 0, 0xE, 0) => self.op_00e0(),
@@ -141,24 +129,118 @@ impl Chip8 {
         self.draw_flag = true;
     }
 
+    // Return from a subroutine
+    fn op_00ee(&mut self) {
+        self.stack_ptr -= 1;
+        self.pc = self.stack[self.stack_ptr as usize];
+    }
+
     // Jump to address NNN
     fn op_1nnn(&mut self, nnn: u16) {
-        self.pc = nnn
+        self.pc = nnn;
+    }
+
+    // Call subroutine at NNN
+    fn op_2nnn(&mut self, nnn: u16) {
+        self.stack[self.stack_ptr as usize] = self.pc;
+        self.stack_ptr += 1;
+        self.pc = nnn;
+    }
+
+    // Skip next instruction if VX == NN
+    fn op_3xnn(&mut self, x: u16, nn: u16) {
+        if self.v_register[x as usize] == nn as u8 {
+            self.pc += 2;
+        }
+    }
+
+    // Skip next instruction if VX != NN
+    fn op_4xnn(&mut self, x: u16, nn: u16) {
+        if self.v_register[x as usize] != nn as u8 {
+            self.pc += 2;
+        }
+    }
+
+    // Skip next instruction if VX == VY
+    fn op_5xy0(&mut self, x: u16, y: u16) {
+        if self.v_register[x as usize] == self.v_register[y as usize] {
+            self.pc += 2;
+        }
     }
 
     // Set register VX to NN
-    fn op_6xnn(&mut self, x: u16, nn: u8) {
-        self.v_register[x as usize] = nn
+    fn op_6xnn(&mut self, x: u16, nn: u16) {
+        self.v_register[x as usize] = nn as u8;
     }
 
     // Add NN to register VX
-    fn op_7xnn(&mut self, x: u16, nn: u8) {
-        self.v_register[x as usize] += nn
+    fn op_7xnn(&mut self, x: u16, nn: u16) {
+        self.v_register[x as usize] += nn as u8;
+    }
+
+    // Set VX = VY
+    fn op_8xy0(&mut self, x: u16, y: u16) {
+        self.v_register[x as usize] = self.v_register[y as usize];
+    }
+
+    // Set VX to VX or VY
+    fn op_8xy1(&mut self, x: u16, y: u16) {
+        self.v_register[x as usize] |= self.v_register[y as usize];
+    }
+
+    // Set VX to VX and VY
+    fn op_8xy2(&mut self, x: u16, y: u16) {
+        self.v_register[x as usize] &= self.v_register[y as usize];
+    }
+
+    // Set VX to VX xor VY
+    fn op_8xy3(&mut self, x: u16, y: u16) {
+        self.v_register[x as usize] ^= self.v_register[y as usize];
+    }
+
+    // Add VY to VX. Set VF to 1 if there's carry
+    fn op_8xy4(&mut self, x: u16, y: u16) {
+        let (result, overflow) = self.v_register[x as usize].overflowing_add(self.v_register[y as usize]);
+        self.v_register[x as usize] = result;
+        self.v_register[0xf] = if overflow {1} else {0};
+    }
+
+    // Subtract VX with VY. If VX > VY then set VF to 1
+    fn op_8xy5(&mut self, x: u16, y: u16) {
+        let (result, overflow) = self.v_register[x as usize].overflowing_sub(self.v_register[y as usize]);
+        self.v_register[x as usize] = result;
+        self.v_register[0xf] = if overflow {0} else {1};
+    }
+
+    // Store LSB of VX to VF then right shift VF by 1
+    fn op_8xy6(&mut self, x: u16, y: u16) {
+        self.v_register[0xf] = self.v_register[x as usize] & 0b00000001;
+        self.v_register[x as usize] >>= 1;
+    }
+
+    // Subtract VY with VX. If VX < VY then set VF to 1
+    fn op_8xy7(&mut self, x: u16, y: u16) {
+        let (result, overflow) = self.v_register[y as usize].overflowing_sub(self.v_register[x as usize]);
+        self.v_register[x as usize] = result;
+        self.v_register[0xf] = if overflow {0} else {1};
+    }
+
+    // Store MSB of VX in VF then left shift VX by 1
+    fn op_8xye(&mut self, x: u16, y: u16) {
+        self.v_register[0xf] = self.v_register[x as usize] >> 7;
+        self.v_register[x as usize] <<= 1;
+    }
+
+    // Skip next instruction if VX != VY
+    fn op_9xy0(&mut self, x: u16, y: u16) {
+        if self.v_register[x as usize] != self.v_register[y as usize] {
+            self.pc += 2;
+        }
     }
 
     // Set index register to NNN
     fn op_annn(&mut self, nnn: u16) {
-        self.i_register = nnn
+        self.i_register = nnn;
     }
 
     // Draw
@@ -180,5 +262,6 @@ impl Chip8 {
                 }
             }
         }
+        self.draw_flag = true;
     }
 }
