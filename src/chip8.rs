@@ -1,5 +1,6 @@
 // Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
+use rand::Rng;
 use winit::event::Event;
 
 const WIDTH: usize = 64;
@@ -114,10 +115,27 @@ impl Chip8 {
         match nibbles {
             (0, 0, 0, 0) => return,
             (0, 0, 0xE, 0) => self.op_00e0(),
+            (0, 0, 0xE, 0xE) => self.op_00ee(),
             (1, _, _, _) => self.op_1nnn(nnn),
+            (2, _, _, _) => self.op_2nnn(nnn),
+            (3, _, _, _) => self.op_3xnn(nibbles.1, nn),
+            (4, _, _, _) => self.op_4xnn(nibbles.1, nn),
+            (5, _, _, 0) => self.op_5xy0(nibbles.1, nibbles.2),
             (6, _, _, _) => self.op_6xnn(nibbles.1, nn),
             (7, _, _, _) => self.op_7xnn(nibbles.1, nn),
+            (8, _, _, 0) => self.op_8xy0(nibbles.1, nibbles.2),
+            (8, _, _, 1) => self.op_8xy1(nibbles.1, nibbles.2),
+            (8, _, _, 2) => self.op_8xy2(nibbles.1, nibbles.2),
+            (8, _, _, 3) => self.op_8xy3(nibbles.1, nibbles.2),
+            (8, _, _, 4) => self.op_8xy4(nibbles.1, nibbles.2),
+            (8, _, _, 5) => self.op_8xy5(nibbles.1, nibbles.2),
+            (8, _, _, 6) => self.op_8xy6(nibbles.1, nibbles.2),
+            (8, _, _, 7) => self.op_8xy7(nibbles.1, nibbles.2),
+            (8, _, _, 0xE) => self.op_8xye(nibbles.1, nibbles.2),
+            (9, _, _, 0) => self.op_9xy0(nibbles.1, nibbles.2),
             (0xA, _, _, _) => self.op_annn(nnn),
+            (0xB, _, _, _) => self.op_bnnn(nibbles.1, nnn),
+            (0xC, _, _, _) => self.op_cxnn(nibbles.1, nn),
             (0xD, _, _, _) => self.op_dxyn(nibbles.1, nibbles.2, nibbles.3),
             (_, _, _, _) => unimplemented!("Unimplemented")
         }
@@ -175,7 +193,7 @@ impl Chip8 {
 
     // Add NN to register VX
     fn op_7xnn(&mut self, x: u16, nn: u16) {
-        self.v_register[x as usize] += nn as u8;
+        self.v_register[x as usize] = self.v_register[x as usize].overflowing_add(nn as u8).0;
     }
 
     // Set VX = VY
@@ -213,6 +231,7 @@ impl Chip8 {
     }
 
     // Store LSB of VX to VF then right shift VF by 1
+    //TODO This instruction is ambiguous, and only works on "modern' programs
     fn op_8xy6(&mut self, x: u16, y: u16) {
         self.v_register[0xf] = self.v_register[x as usize] & 0b00000001;
         self.v_register[x as usize] >>= 1;
@@ -224,8 +243,8 @@ impl Chip8 {
         self.v_register[x as usize] = result;
         self.v_register[0xf] = if overflow {0} else {1};
     }
-
     // Store MSB of VX in VF then left shift VX by 1
+    //TODO This instruction is ambiguous, and only works on "modern' programs
     fn op_8xye(&mut self, x: u16, y: u16) {
         self.v_register[0xf] = self.v_register[x as usize] >> 7;
         self.v_register[x as usize] <<= 1;
@@ -241,6 +260,17 @@ impl Chip8 {
     // Set index register to NNN
     fn op_annn(&mut self, nnn: u16) {
         self.i_register = nnn;
+    }
+
+    // Jump to nnn, plus value in VX
+    //TODO This instruction is ambiguous, and only works on "modern' programs
+    fn op_bnnn(&mut self, x: u16, nnn: u16) {
+        self.pc = nnn + self.v_register[x as usize] as u16;
+    }
+
+    // Get random number and binary AND with NN, and put in VX
+    fn op_cxnn(&mut self, x: u16, nn: u16) {
+        self.v_register[x as usize] = rand::thread_rng().gen_range(0..=255) & nn as u8;
     }
 
     // Draw
