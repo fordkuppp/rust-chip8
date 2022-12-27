@@ -137,7 +137,18 @@ impl Chip8 {
             (0xB, _, _, _) => self.op_bnnn(nibbles.1, nnn),
             (0xC, _, _, _) => self.op_cxnn(nibbles.1, nn),
             (0xD, _, _, _) => self.op_dxyn(nibbles.1, nibbles.2, nibbles.3),
-            (_, _, _, _) => unimplemented!("Unimplemented")
+            (0xE, _, 9, 0xE) => println!("ex9e"),
+            (0xE, _, 0xA, 1) => println!("exa1"),
+            (0xF, _, 0, 7) => println!("fx07"),
+            (0xF, _, 0, 0xA) => println!("fx0a"),
+            (0xF, _, 1, 5) => println!("fx15"),
+            (0xF, _, 1, 8) => println!("fx18"),
+            (0xF, _, 1, 0xE) => println!("fx1e"),
+            (0xF, _, 2, 9) => println!("fx29"),
+            (0xF, _, 3, 3) => println!("fx33"),
+            (0xF, _, 5, 5) => println!("fx55"),
+            (0xF, _, 6, 5) => println!("fx65"),
+            (_, _, _, _) => unimplemented!("Opcode error")
         }
     }
 
