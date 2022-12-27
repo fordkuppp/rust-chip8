@@ -42,6 +42,9 @@ fn main() {
     chip8.load(&buf);
 
     event_loop.run(move |event, _, control_flow| {
+        // Set key to be empty (not pressing anything)
+        chip8.key = [false; 16];
+
         // Handle draw event
         if chip8.draw_flag {
             window.request_redraw();
@@ -60,8 +63,57 @@ fn main() {
                 },
                 ..
             } => match key {
+                // Keys are     1,2,3,4     corresponding to 16 boolean in chip8.key
+                //              q,w,e,r
+                //              a,s,d,f
+                //              z,x,c,v
+                VirtualKeyCode::Key1 => {
+                    chip8.key[0] = true;
+                }
+                VirtualKeyCode::Key2 => {
+                    chip8.key[1] = true;
+                }
+                VirtualKeyCode::Key3 => {
+                    chip8.key[2] = true;
+                }
+                VirtualKeyCode::Key4 => {
+                    chip8.key[3] = true;
+                }
+                VirtualKeyCode::Q => {
+                    chip8.key[4] = true;
+                }
+                VirtualKeyCode::W => {
+                    chip8.key[5] = true;
+                }
+                VirtualKeyCode::E => {
+                    chip8.key[6] = true;
+                }
+                VirtualKeyCode::R => {
+                    chip8.key[7] = true;
+                }
+                VirtualKeyCode::A => {
+                    chip8.key[8] = true;
+                }
+                VirtualKeyCode::S => {
+                    chip8.key[9] = true;
+                }
+                VirtualKeyCode::D => {
+                    chip8.key[10] = true;
+                }
                 VirtualKeyCode::F => {
-                    println!("f is pressed!")
+                    chip8.key[11] = true;
+                }
+                VirtualKeyCode::Z => {
+                    chip8.key[12] = true;
+                }
+                VirtualKeyCode::X => {
+                    chip8.key[13] = true;
+                }
+                VirtualKeyCode::C => {
+                    chip8.key[14] = true;
+                }
+                VirtualKeyCode::V => {
+                    chip8.key[15] = true;
                 }
                 _ => (),
             }
