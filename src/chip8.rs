@@ -137,17 +137,17 @@ impl Chip8 {
             (0xB, _, _, _) => self.op_bnnn(nibbles.1, nnn),
             (0xC, _, _, _) => self.op_cxnn(nibbles.1, nn),
             (0xD, _, _, _) => self.op_dxyn(nibbles.1, nibbles.2, nibbles.3),
-            (0xE, _, 9, 0xE) => println!("ex9e"),
-            (0xE, _, 0xA, 1) => println!("exa1"),
+            (0xE, _, 9, 0xE) => self.op_ex9e(nibbles.1),
+            (0xE, _, 0xA, 1) => self.op_exa1(nibbles.1),
             (0xF, _, 0, 7) => println!("fx07"),
             (0xF, _, 0, 0xA) => println!("fx0a"),
             (0xF, _, 1, 5) => println!("fx15"),
             (0xF, _, 1, 8) => println!("fx18"),
             (0xF, _, 1, 0xE) => println!("fx1e"),
             (0xF, _, 2, 9) => println!("fx29"),
-            (0xF, _, 3, 3) => println!("fx33"),
-            (0xF, _, 5, 5) => println!("fx55"),
-            (0xF, _, 6, 5) => println!("fx65"),
+            (0xF, _, 3, 3) => self.op_fx33(nibbles.1),
+            (0xF, _, 5, 5) => self.op_fx55(nibbles.1),
+            (0xF, _, 6, 5) => self.op_fx65(nibbles.1),
             (_, _, _, _) => unimplemented!("Opcode error")
         }
     }
@@ -304,5 +304,43 @@ impl Chip8 {
             }
         }
         self.draw_flag = true;
+    }
+
+    // Skip next instruction if key is pressed
+    fn op_ex9e(&mut self, x: u16) {
+        if self.key[self.v_register[x as usize] as usize] {
+            self.pc += 2;
+        }
+    }
+
+    // Skip next instruction if key is not pressed
+    fn op_exa1(&mut self, x: u16) {
+        if !(self.key[self.v_register[x as usize] as usize]) {
+            self.pc += 2;
+        }
+    }
+
+    // Store binary-coded decimal of VX, with hundredth digit at memory location I, tenth at I+1, ones at I+2.
+    // Ex. If VX is 123, address I would be 1, address I+2 would be 2, address I+3 would be 3.
+    fn op_fx33(&mut self, x: u16) {
+        self.memory[self.i_register as usize] = self.v_register[x as usize] / 100;
+        self.memory[(self.i_register + 1) as usize] = self.v_register[x as usize] % 100 / 10;
+        self.memory[(self.i_register + 2) as usize] = self.v_register[x as usize] % 10;
+    }
+
+    // Store registers to memory
+    //TODO This instruction is ambiguous, and only works on "modern' programs
+    fn op_fx55(&mut self, x: u16) {
+        for val in 0..=x {
+            self.memory[(self.i_register + val) as usize] = self.v_register[val as usize];
+        }
+    }
+
+    // Load value from memory to registers
+    //TODO This instruction is ambiguous, and only works on "modern' programs
+    fn op_fx65(&mut self, x: u16) {
+        for val in 0..=x {
+            self.v_register[val as usize] =  self.memory[(self.i_register + val) as usize];
+        }
     }
 }
