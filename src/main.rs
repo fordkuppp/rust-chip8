@@ -3,7 +3,7 @@ use std::io::Read;
 use std::time::{Duration, Instant};
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
-use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, KeyboardInput, ScanCode, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{EventLoop, EventLoopBuilder};
 use winit::window::WindowBuilder;
 use crate::chip8::Chip8;
@@ -45,7 +45,7 @@ fn main() {
     let timer_length = Duration::new(0, 16666666); // TODO: remove 1 sec
     event_loop.run(move |event, _, control_flow| {
         // Set key to be empty (not pressing anything)
-        chip8.key = [false; 16]; // TODO: dont reset key until it gets used
+        // chip8.key = [false; 16]; // TODO: dont reset key until it gets used
         // Handle draw event
         if chip8.draw_flag {
             // Use set_wait_until to draw at 60 fps
@@ -58,67 +58,123 @@ fn main() {
                 WindowEvent::KeyboardInput {
                     input:
                     KeyboardInput {
-                        virtual_keycode: Some(key),
-                        state: ElementState::Pressed,
+                        scancode: key,
+                        state,
                         ..
                     },
                     ..
                 },
                 ..
-            } => match key {
-                // Keys are     1,2,3,4     corresponding to 16 boolean in chip8.key
-                //              q,w,e,r
-                //              a,s,d,f
-                //              z,x,c,v
-                VirtualKeyCode::Key1 => {
-                    chip8.key[0] = true;
+            } => match state {
+                // 1,2,3,4   <= keyboard, chip8 =>  1,2,3,c
+                // q,w,e,r                          4,5,6,d
+                // a,s,d,f                          7,8,9,e
+                // z,x,c,v                          a,0,b,f
+
+                // Use keyboard scan codes set 1
+                ElementState::Pressed => match key {
+                    0x02 => { // 1 <=> 1
+                        chip8.key[1] = true;
+                    }
+                    0x03 => { // 2 <=> 2
+                        chip8.key[2] = true;
+                    }
+                    0x04 => { // 3 <=> 3
+                        chip8.key[3] = true;
+                    }
+                    0x05 => { // 4 <=> c
+                        chip8.key[0xc] = true;
+                    }
+                    0x10 => { // q <=> 4
+                        chip8.key[4] = true;
+                    }
+                    0x11 => { // w <=> 5
+                        chip8.key[5] = true;
+                    }
+                    0x12 => { // e <=> 6
+                        chip8.key[6] = true;
+                    }
+                    0x13 => { // r <=> d
+                        chip8.key[0xd] = true;
+                    }
+                    0x1e => { // a <=> 7
+                        chip8.key[7] = true;
+                    }
+                    0x1f => { // s <=> 8
+                        chip8.key[8] = true;
+                    }
+                    0x20 => { // d <=> 9
+                        chip8.key[9] = true;
+                    }
+                    0x21 => { // f <=> e
+                        chip8.key[0xe] = true;
+                    }
+                    0x2c => { // z <=> a
+                        chip8.key[12] = true;
+                    }
+                    0x2d => { // x <=> 0
+                        chip8.key[13] = true;
+                    }
+                    0x2e => { // c <=> b
+                        chip8.key[14] = true;
+                    }
+                    0x2f => { // v <=> f
+                        chip8.key[15] = true;
+                    }
+                    _ => (),
                 }
-                VirtualKeyCode::Key2 => {
-                    chip8.key[1] = true;
+                ElementState::Released => match key {
+                    0x02 => { // 1 <=> 1
+                        chip8.key[1] = false;
+                    }
+                    0x03 => { // 2 <=> 2
+                        chip8.key[2] = false;
+                    }
+                    0x04 => { // 3 <=> 3
+                        chip8.key[3] = false;
+                    }
+                    0x05 => { // 4 <=> c
+                        chip8.key[0xc] = false;
+                    }
+                    0x10 => { // q <=> 4
+                        chip8.key[4] = false;
+                    }
+                    0x11 => { // w <=> 5
+                        chip8.key[5] = false;
+                    }
+                    0x12 => { // e <=> 6
+                        chip8.key[6] = false;
+                    }
+                    0x13 => { // r <=> d
+                        chip8.key[0xd] = false;
+                    }
+                    0x1e => { // a <=> 7
+                        chip8.key[7] = false;
+                    }
+                    0x1f => { // s <=> 8
+                        chip8.key[8] = false;
+                    }
+                    0x20 => { // d <=> 9
+                        chip8.key[9] = false;
+                    }
+                    0x21 => { // f <=> e
+                        chip8.key[0xe] = false;
+                    }
+                    0x2c => { // z <=> a
+                        chip8.key[12] = false;
+                    }
+                    0x2d => { // x <=> 0
+                        chip8.key[13] = false;
+                    }
+                    0x2e => { // c <=> b
+                        chip8.key[14] = false;
+                    }
+                    0x2f => { // v <=> f
+                        chip8.key[15] = false;
+                    }
+                    _ => (),
                 }
-                VirtualKeyCode::Key3 => {
-                    chip8.key[2] = true;
-                }
-                VirtualKeyCode::Key4 => {
-                    chip8.key[3] = true;
-                }
-                VirtualKeyCode::Q => {
-                    chip8.key[4] = true;
-                }
-                VirtualKeyCode::W => {
-                    chip8.key[5] = true;
-                }
-                VirtualKeyCode::E => {
-                    chip8.key[6] = true;
-                }
-                VirtualKeyCode::R => {
-                    chip8.key[7] = true;
-                }
-                VirtualKeyCode::A => {
-                    chip8.key[8] = true;
-                }
-                VirtualKeyCode::S => {
-                    chip8.key[9] = true;
-                }
-                VirtualKeyCode::D => {
-                    chip8.key[10] = true;
-                }
-                VirtualKeyCode::F => {
-                    chip8.key[11] = true;
-                }
-                VirtualKeyCode::Z => {
-                    chip8.key[12] = true;
-                }
-                VirtualKeyCode::X => {
-                    chip8.key[13] = true;
-                }
-                VirtualKeyCode::C => {
-                    chip8.key[14] = true;
-                }
-                VirtualKeyCode::V => {
-                    chip8.key[15] = true;
-                }
-                _ => (),
+
             }
             Event::WindowEvent {event: WindowEvent::CloseRequested, ..} => {
                 control_flow.set_exit();
