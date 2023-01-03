@@ -2,9 +2,8 @@ use std::fs::File;
 use std::io::Read;
 use std::time::{Duration, Instant};
 use pixels::{Pixels, SurfaceTexture};
-use winit::dpi::LogicalSize;
-use winit::event::{ElementState, Event, KeyboardInput, ScanCode, VirtualKeyCode, WindowEvent};
-use winit::event_loop::{EventLoop, EventLoopBuilder};
+use winit::event::{ElementState, Event, KeyboardInput, WindowEvent};
+use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 use crate::chip8::Chip8;
 
@@ -14,15 +13,10 @@ const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
 
 fn main() {
-    println!("Hello, world!");
-    // TODO: Set up render system and input
     let event_loop = EventLoop::new();
-    let mut window = {
-        let size = LogicalSize::new(WIDTH as u32, HEIGHT as u32);
+    let window = {
         WindowBuilder::new()
             .with_title("Chip-8")
-            // .with_inner_size(size)
-            // .with_min_inner_size(size)
             .build(&event_loop)
             .unwrap()
     };
@@ -34,8 +28,8 @@ fn main() {
 
     // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
-    let mut rom = File::open(&"roms/chip8-test-suite.ch8").expect("Unable to open file");
-    // let mut rom = File::open(&"roms/test_opcode.ch8").expect("Unable to open file");
+    let mut rom = File::open("roms/chip8-test-suite.ch8").expect("Unable to open file");
+    // let mut rom = File::open("roms/test_opcode.ch8").expect("Unable to open file");
 
     let mut buf = Vec::new();
     rom.read_to_end(&mut buf).unwrap();
@@ -44,8 +38,6 @@ fn main() {
     // TODO: make timer actually work
     let timer_length = Duration::new(0, 16666666); // TODO: remove 1 sec
     event_loop.run(move |event, _, control_flow| {
-        // Set key to be empty (not pressing anything)
-        // chip8.key = [false; 16]; // TODO: dont reset key until it gets used
         // Handle draw event
         if chip8.draw_flag {
             // Use set_wait_until to draw at 60 fps

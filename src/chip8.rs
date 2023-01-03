@@ -1,7 +1,6 @@
 // Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
 use rand::Rng;
-use winit::event::Event;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
@@ -60,7 +59,7 @@ impl Chip8 {
     }
 
     // Reset everything to original state
-    pub fn reset(&mut self) {
+    pub fn _reset(&mut self) {
         self.opcode = 0;
         self.memory = [0; 4096];
         self.v_register = [0; 16];
@@ -110,10 +109,10 @@ impl Chip8 {
 
     // Execute opcode
     fn execute(&mut self, nibbles: (u16, u16, u16, u16)) {
-        let nnn = (self.opcode & 0x0FFF);
-        let nn = (self.opcode & 0x00FF);
+        let nnn = self.opcode & 0x0FFF;
+        let nn = self.opcode & 0x00FF;
         match nibbles {
-            (0, 0, 0, 0) => return,
+            (0, 0, 0, 0) => (),
             (0, 0, 0xE, 0) => self.op_00e0(),
             (0, 0, 0xE, 0xE) => self.op_00ee(),
             (1, _, _, _) => self.op_1nnn(nnn),
@@ -231,7 +230,7 @@ impl Chip8 {
     fn op_8xy4(&mut self, x: u16, y: u16) {
         let (result, overflow) = self.v_register[x as usize].overflowing_add(self.v_register[y as usize]);
         self.v_register[x as usize] = result;
-        self.v_register[0xf] = if overflow {1} else {0};
+        self.v_register[0xf] = u8::from(overflow);
     }
 
     // Subtract VX with VY. If VX > VY then set VF to 1
@@ -243,7 +242,7 @@ impl Chip8 {
 
     // Store LSB of VX to VF then right shift VF by 1
     //TODO This instruction is ambiguous, and only works on "modern' programs
-    fn op_8xy6(&mut self, x: u16, y: u16) {
+    fn op_8xy6(&mut self, x: u16, _y: u16) {
         self.v_register[0xf] = self.v_register[x as usize] & 0b00000001;
         self.v_register[x as usize] >>= 1;
     }
@@ -256,7 +255,7 @@ impl Chip8 {
     }
     // Store MSB of VX in VF then left shift VX by 1
     //TODO This instruction is ambiguous, and only works on "modern' programs
-    fn op_8xye(&mut self, x: u16, y: u16) {
+    fn op_8xye(&mut self, x: u16, _y: u16) {
         self.v_register[0xf] = self.v_register[x as usize] >> 7;
         self.v_register[x as usize] <<= 1;
     }
@@ -288,15 +287,14 @@ impl Chip8 {
     fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
         let x_coord = self.v_register[x as usize];
         let y_coord = self.v_register[y as usize];
-        let mut pixel = 0 as u16;
 
         self.v_register[0xF] = 0;
         for y_line in 0..n {
-            pixel = self.memory[(self.i_register + y_line) as usize] as u16;
-            for x_line in 0..(8 as u16) {
+            let pixel = self.memory[(self.i_register + y_line) as usize] as u16;
+            for x_line in 0..8_u16 {
                 if (pixel & (0x80 >> x_line)) != 0 {
                     // Check collision
-                    if self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] == true {
+                    if self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] {
                         self.v_register[0xF] = 1;
                     }
                     self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] ^= true;
@@ -326,7 +324,7 @@ impl Chip8 {
     }
 
     // Halt all instructions until key is pressed
-    fn op_fx0a(&mut self, x: u16) {
+    fn op_fx0a(&mut self, _x: u16) {
         // TODO: Probably not the best way to do this
         if self.key == [false; 16] {
             self.pc -= 2;
