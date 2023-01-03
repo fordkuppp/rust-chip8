@@ -139,16 +139,16 @@ impl Chip8 {
             (0xD, _, _, _) => self.op_dxyn(nibbles.1, nibbles.2, nibbles.3),
             (0xE, _, 9, 0xE) => self.op_ex9e(nibbles.1),
             (0xE, _, 0xA, 1) => self.op_exa1(nibbles.1),
-            (0xF, _, 0, 7) => println!("fx07"),
-            (0xF, _, 0, 0xA) => println!("fx0a"),
-            (0xF, _, 1, 5) => println!("fx15"),
-            (0xF, _, 1, 8) => println!("fx18"),
-            (0xF, _, 1, 0xE) => println!("fx1e"),
-            (0xF, _, 2, 9) => println!("fx29"),
+            (0xF, _, 0, 7) => self.op_fx07(nibbles.1),
+            (0xF, _, 0, 0xA) => self.op_fx0a(nibbles.1),
+            (0xF, _, 1, 5) => self.op_fx15(nibbles.1),
+            (0xF, _, 1, 8) => self.op_fx18(nibbles.1),
+            (0xF, _, 1, 0xE) => self.op_fx1e(nibbles.1),
+            (0xF, _, 2, 9) => self.op_fx29(nibbles.1),
             (0xF, _, 3, 3) => self.op_fx33(nibbles.1),
             (0xF, _, 5, 5) => self.op_fx55(nibbles.1),
             (0xF, _, 6, 5) => self.op_fx65(nibbles.1),
-            (_, _, _, _) => unimplemented!("Opcode error")
+            (_, _, _, _) => () // Exhausted all possible opcodes
         }
     }
 
@@ -318,6 +318,39 @@ impl Chip8 {
         if !(self.key[self.v_register[x as usize] as usize]) {
             self.pc += 2;
         }
+    }
+
+    // Set VX to delay timer
+    fn op_fx07(&mut self, x: u16) {
+        self.v_register[x as usize] = self.delay_timer;
+    }
+
+    // Halt all instructions until key is pressed
+    fn op_fx0a(&mut self, x: u16) {
+        // TODO: Probably not the best way to do this
+        if self.key == [false; 16] {
+            self.pc -= 2;
+        }
+    }
+
+    // Set delay timer to VX
+    fn op_fx15(&mut self, x: u16) {
+        self.delay_timer = self.v_register[x as usize];
+    }
+
+    // Set sound timer to VX
+    fn op_fx18(&mut self, x: u16) {
+        self.sound_timer = self.v_register[x as usize];
+    }
+
+    // Add VX to I
+    fn op_fx1e(&mut self, x: u16) {
+        self.i_register += self.v_register[x as usize] as u16;
+    }
+
+    // Set I to the location of sprite address for character in VX
+    fn op_fx29(&mut self, x: u16) {
+        self.i_register = (self.v_register[x as usize] * 5) as u16
     }
 
     // Store binary-coded decimal of VX, with hundredth digit at memory location I, tenth at I+1, ones at I+2.
