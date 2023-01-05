@@ -20,15 +20,13 @@ impl Timer {
         let st = Arc::clone(&self.st);
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::new(1, 0));
+            thread::sleep(Duration::new(0, 16666666));
 
             let dt_curr = dt.load(Ordering::Relaxed);
             let st_curr = st.load(Ordering::Relaxed);
 
             if dt_curr > 0 { dt.store(dt_curr - 1, Ordering::Relaxed); }
             if st_curr > 0 { st.store(st_curr - 1, Ordering::Relaxed); }
-
-            println!("{:?}", dt_curr);
         });
     }
     pub fn set_dt(&mut self, dt_value: u8) {
