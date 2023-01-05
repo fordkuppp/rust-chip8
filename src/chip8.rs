@@ -1,6 +1,7 @@
 // Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
 use rand::Rng;
+use crate::timer::Timer;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
@@ -36,10 +37,14 @@ pub struct Chip8 {
     pub stack_ptr: u16,
     pub key: [bool; 16],
     pub draw_flag: bool,
+    pub timer: Timer,
 }
 
 impl Chip8 {
     pub fn new() -> Self {
+        let mut timer = Timer::new();
+        timer.start();
+
         let mut new_chip8 = Chip8 {
             opcode: 0,
             memory: [0; 4096],
@@ -53,6 +58,7 @@ impl Chip8 {
             stack_ptr: 0,
             key: [false; 16],
             draw_flag: false,
+            timer,
         };
         new_chip8.memory[0x050..=0x09F].copy_from_slice(&FONTSET);
         new_chip8
@@ -73,6 +79,7 @@ impl Chip8 {
         self.key = [false; 16];
         self.draw_flag = false;
         self.memory[0x050..0x09F].copy_from_slice(&FONTSET);
+        self.timer = Timer::new();
     }
 
     // Load data into memory TODO: Take in path instead
@@ -320,7 +327,7 @@ impl Chip8 {
 
     // Set VX to delay timer
     fn op_fx07(&mut self, x: u16) {
-        self.v_register[x as usize] = self.delay_timer;
+        self.v_register[x as usize] = self.timer.get_dt();
     }
 
     // Halt all instructions until key is pressed
@@ -333,12 +340,12 @@ impl Chip8 {
 
     // Set delay timer to VX
     fn op_fx15(&mut self, x: u16) {
-        self.delay_timer = self.v_register[x as usize];
+        self.timer.set_dt(self.v_register[x as usize]);
     }
 
     // Set sound timer to VX
     fn op_fx18(&mut self, x: u16) {
-        self.sound_timer = self.v_register[x as usize];
+        self.timer.set_st(self.v_register[x as usize]);
     }
 
     // Add VX to I

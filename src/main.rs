@@ -6,8 +6,10 @@ use winit::event::{ElementState, Event, KeyboardInput, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 use crate::chip8::Chip8;
+use crate::timer::Timer;
 
 mod chip8;
+mod timer;
 
 const WIDTH: usize = 64;
 const HEIGHT: usize = 32;
@@ -29,7 +31,7 @@ fn main() {
     // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
     let mut rom = File::open("roms/chip8-test-suite.ch8").expect("Unable to open file");
-    // let mut rom = File::open("roms/test_opcode.ch8").expect("Unable to open file");
+    // let mut rom = File::open("roms/Space Invaders [David Winter].ch8").expect("Unable to open file");
 
     let mut buf = Vec::new();
     rom.read_to_end(&mut buf).unwrap();
@@ -44,6 +46,7 @@ fn main() {
             control_flow.set_wait_until(Instant::now() + timer_length);
             window.request_redraw();
         }
+
         match event {
             Event::WindowEvent {
                 event:
