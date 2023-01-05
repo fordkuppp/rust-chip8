@@ -247,11 +247,12 @@ impl Chip8 {
         self.v_register[0xf] = if overflow {0} else {1};
     }
 
-    // Store LSB of VX to VF then right shift VF by 1
+    // Right shift VX by 1 bit. Set VF to the shifted out bit
     //TODO This instruction is ambiguous, and only works on "modern' programs
     fn op_8xy6(&mut self, x: u16, _y: u16) {
-        self.v_register[0xf] = self.v_register[x as usize] & 0b00000001;
+        let lsb = self.v_register[x as usize] & 0b00000001;
         self.v_register[x as usize] >>= 1;
+        self.v_register[0xf] = lsb;
     }
 
     // Subtract VY with VX. If VX < VY then set VF to 1
@@ -260,11 +261,12 @@ impl Chip8 {
         self.v_register[x as usize] = result;
         self.v_register[0xf] = if overflow {0} else {1};
     }
-    // Store MSB of VX in VF then left shift VX by 1
+    // Left shift VX by 1 bit. Set VF to the shifted out bit
     //TODO This instruction is ambiguous, and only works on "modern' programs
     fn op_8xye(&mut self, x: u16, _y: u16) {
-        self.v_register[0xf] = self.v_register[x as usize] >> 7;
+        let msb = self.v_register[x as usize] >> 7;
         self.v_register[x as usize] <<= 1;
+        self.v_register[0xf] = msb;
     }
 
     // Skip next instruction if VX != VY
