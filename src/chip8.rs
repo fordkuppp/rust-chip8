@@ -294,19 +294,25 @@ impl Chip8 {
 
     // Draw
     fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
-        let x_coord = self.v_register[x as usize];
-        let y_coord = self.v_register[y as usize];
+        let x_coord = (self.v_register[x as usize] % 64) as u16;
+        let y_coord = (self.v_register[y as usize] % 32 ) as u16;
 
         self.v_register[0xF] = 0;
         for y_line in 0..n {
+            if (y_coord+y_line) >= 32 { break; }
             let pixel = self.memory[(self.i_register + y_line) as usize] as u16;
             for x_line in 0..8_u16 {
+                if (x_coord+x_line) >= 64 { break; }
                 if (pixel & (0x80 >> x_line)) != 0 {
-                    // Check collision
-                    if self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] {
+                    // add modulus to x,y and remove 'clipping if' to have wrapping instead
+                    let x = (x_coord + x_line) ;// % 64;
+                    let y = (y_coord + y_line) ;// % 32;
+
+                    // Check if the pixel will be turn off
+                    if self.screen[(x + (y * 64)) as usize] {
                         self.v_register[0xF] = 1;
                     }
-                    self.screen[(x_coord as u16 + x_line + ((y_coord as u16 + y_line) * 64)) as usize] ^= true;
+                    self.screen[(x + (y * 64)) as usize] ^= true;
                 }
             }
         }
