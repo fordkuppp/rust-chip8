@@ -52,7 +52,7 @@ impl Audio {
                 err_fn,
             )
             .unwrap();
-        stream.play().unwrap();
+        stream.pause().unwrap();
         stream
     }
 
