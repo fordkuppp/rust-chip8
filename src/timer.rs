@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU16, AtomicU8, Ordering};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub struct Timer {
     dt: Arc<AtomicU8>,
@@ -20,7 +20,7 @@ impl Timer {
         let st = Arc::clone(&self.st);
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::new(0, 16666666));
+            spin_sleep::sleep(Duration::new(0, 16666666));
 
             let dt_curr = dt.load(Ordering::Relaxed);
             let st_curr = st.load(Ordering::Relaxed);

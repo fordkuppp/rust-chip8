@@ -40,8 +40,7 @@ fn main() {
     rom.read_to_end(&mut buf).unwrap();
     chip8.load(&buf);
 
-    // TODO: make timer actually work
-    let timer_length = Duration::new(0, 16666666); // TODO: remove 1 sec
+    let timer_length = Duration::new(0, 16666666);
     event_loop.run(move |event, _, control_flow| {
         // Handle draw event
         if chip8.draw_flag {
