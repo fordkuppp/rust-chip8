@@ -33,8 +33,8 @@ fn main() {
 
     // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
     let mut chip8 = Chip8::new();
-    // let mut rom = File::open("roms/chip8-test-suite.ch8").expect("Unable to open file");
-    let mut rom = File::open("roms/chip8-test-rom-with-audio.ch8").expect("Unable to open file");
+    let mut rom = File::open("roms/chip8-test-suite.ch8").expect("Unable to open file");
+    // let mut rom = File::open("roms/chip8-test-rom-with-audio.ch8").expect("Unable to open file");
 
     let mut buf = Vec::new();
     rom.read_to_end(&mut buf).unwrap();
@@ -44,8 +44,6 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         // Handle draw event
         if chip8.draw_flag {
-            // Use set_wait_until to draw at 60 fps
-            control_flow.set_wait_until(Instant::now() + timer_length);
             window.request_redraw();
         }
 
@@ -183,6 +181,9 @@ fn main() {
                 control_flow.set_exit();
             },
             Event::RedrawRequested(_) => {
+                // Use set_wait_until to draw at 60 fps
+                control_flow.set_wait_until(Instant::now() + timer_length);
+
                 let frame = pixels.get_frame_mut();
                 for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
                     let pixel_state = chip8.screen[i];
