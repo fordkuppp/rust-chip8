@@ -1,13 +1,14 @@
 use std::fs::File;
 use std::io::Read;
 use std::time::{Duration, Instant};
+
 use pixels::{Pixels, SurfaceTexture};
 use winit::event::{ElementState, Event, KeyboardInput, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
+
 use crate::audio::Audio;
 use crate::chip8::Chip8;
-use crate::timer::Timer;
 
 mod chip8;
 mod timer;
@@ -42,7 +43,6 @@ fn main() {
 
     let timer_length = Duration::new(0, 16666666);
     event_loop.run(move |event, _, control_flow| {
-        // Handle draw event
         if chip8.draw_flag {
             window.request_redraw();
         }
@@ -75,111 +75,110 @@ fn main() {
                 // Use keyboard scan codes set 1
                 ElementState::Pressed => match key {
                     0x02 => { // 1 <=> 1
-                        chip8.key[1] = true;
+                        chip8.key[0x1] = true;
                     }
                     0x03 => { // 2 <=> 2
-                        chip8.key[2] = true;
+                        chip8.key[0x2] = true;
                     }
                     0x04 => { // 3 <=> 3
-                        chip8.key[3] = true;
+                        chip8.key[0x3] = true;
                     }
                     0x05 => { // 4 <=> c
-                        chip8.key[0xc] = true;
+                        chip8.key[0xC] = true;
                     }
                     0x10 => { // q <=> 4
-                        chip8.key[4] = true;
+                        chip8.key[0x4] = true;
                     }
                     0x11 => { // w <=> 5
-                        chip8.key[5] = true;
+                        chip8.key[0x5] = true;
                     }
                     0x12 => { // e <=> 6
-                        chip8.key[6] = true;
+                        chip8.key[0x6] = true;
                     }
                     0x13 => { // r <=> d
-                        chip8.key[0xd] = true;
+                        chip8.key[0xD] = true;
                     }
                     0x1e => { // a <=> 7
-                        chip8.key[7] = true;
+                        chip8.key[0x7] = true;
                     }
                     0x1f => { // s <=> 8
-                        chip8.key[8] = true;
+                        chip8.key[0x8] = true;
                     }
                     0x20 => { // d <=> 9
-                        chip8.key[9] = true;
+                        chip8.key[0x9] = true;
                     }
                     0x21 => { // f <=> e
-                        chip8.key[0xe] = true;
+                        chip8.key[0xE] = true;
                     }
                     0x2c => { // z <=> a
-                        chip8.key[12] = true;
+                        chip8.key[0xA] = true;
                     }
                     0x2d => { // x <=> 0
-                        chip8.key[13] = true;
+                        chip8.key[0x0] = true;
                     }
                     0x2e => { // c <=> b
-                        chip8.key[14] = true;
+                        chip8.key[0xB] = true;
                     }
                     0x2f => { // v <=> f
-                        chip8.key[15] = true;
+                        chip8.key[0xF] = true;
                     }
                     _ => (),
                 }
                 ElementState::Released => match key {
                     0x02 => { // 1 <=> 1
-                        chip8.key[1] = false;
+                        chip8.key[0x1] = false;
                     }
                     0x03 => { // 2 <=> 2
-                        chip8.key[2] = false;
+                        chip8.key[0x2] = false;
                     }
                     0x04 => { // 3 <=> 3
-                        chip8.key[3] = false;
+                        chip8.key[0x3] = false;
                     }
                     0x05 => { // 4 <=> c
-                        chip8.key[0xc] = false;
+                        chip8.key[0xC] = false;
                     }
                     0x10 => { // q <=> 4
-                        chip8.key[4] = false;
+                        chip8.key[0x4] = false;
                     }
                     0x11 => { // w <=> 5
-                        chip8.key[5] = false;
+                        chip8.key[0x5] = false;
                     }
                     0x12 => { // e <=> 6
-                        chip8.key[6] = false;
+                        chip8.key[0x6] = false;
                     }
                     0x13 => { // r <=> d
-                        chip8.key[0xd] = false;
+                        chip8.key[0xD] = false;
                     }
                     0x1e => { // a <=> 7
-                        chip8.key[7] = false;
+                        chip8.key[0x7] = false;
                     }
                     0x1f => { // s <=> 8
-                        chip8.key[8] = false;
+                        chip8.key[0x8] = false;
                     }
                     0x20 => { // d <=> 9
-                        chip8.key[9] = false;
+                        chip8.key[0x9] = false;
                     }
                     0x21 => { // f <=> e
-                        chip8.key[0xe] = false;
+                        chip8.key[0xE] = false;
                     }
                     0x2c => { // z <=> a
-                        chip8.key[12] = false;
+                        chip8.key[0xA] = false;
                     }
                     0x2d => { // x <=> 0
-                        chip8.key[13] = false;
+                        chip8.key[0x0] = false;
                     }
                     0x2e => { // c <=> b
-                        chip8.key[14] = false;
+                        chip8.key[0xB] = false;
                     }
                     0x2f => { // v <=> f
-                        chip8.key[15] = false;
+                        chip8.key[0xF] = false;
                     }
                     _ => (),
                 }
-
             }
-            Event::WindowEvent {event: WindowEvent::CloseRequested, ..} => {
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 control_flow.set_exit();
-            },
+            }
             Event::RedrawRequested(_) => {
                 // Use set_wait_until to draw at 60 fps
                 control_flow.set_wait_until(Instant::now() + timer_length);
@@ -195,7 +194,7 @@ fn main() {
                     pixel.copy_from_slice(&rgba);
                 }
                 pixels.render().unwrap();
-            },
+            }
             _ => ()
         }
         // Run next tick
