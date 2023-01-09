@@ -1,13 +1,14 @@
 use std::fs::File;
 use std::io::Read;
 use std::time::{Duration, Instant};
+
 use pixels::{Pixels, SurfaceTexture};
 use winit::event::{ElementState, Event, KeyboardInput, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
+
 use crate::audio::Audio;
 use crate::chip8::Chip8;
-use crate::timer::Timer;
 
 mod chip8;
 mod timer;
@@ -42,7 +43,6 @@ fn main() {
 
     let timer_length = Duration::new(0, 16666666);
     event_loop.run(move |event, _, control_flow| {
-        // Handle draw event
         if chip8.draw_flag {
             window.request_redraw();
         }
@@ -175,11 +175,10 @@ fn main() {
                     }
                     _ => (),
                 }
-
             }
-            Event::WindowEvent {event: WindowEvent::CloseRequested, ..} => {
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 control_flow.set_exit();
-            },
+            }
             Event::RedrawRequested(_) => {
                 // Use set_wait_until to draw at 60 fps
                 control_flow.set_wait_until(Instant::now() + timer_length);
@@ -195,7 +194,7 @@ fn main() {
                     pixel.copy_from_slice(&rgba);
                 }
                 pixels.render().unwrap();
-            },
+            }
             _ => ()
         }
         // Run next tick

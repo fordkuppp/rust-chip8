@@ -1,6 +1,7 @@
 // Reference: https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/, https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 
 use rand::Rng;
+
 use crate::timer::Timer;
 
 const WIDTH: usize = 64;
@@ -30,9 +31,7 @@ pub struct Chip8 {
     pub v_register: [u8; 16],
     pub i_register: u16,
     pub pc: u16,
-    pub screen: [bool; WIDTH*HEIGHT],
-    pub delay_timer: u8,
-    pub sound_timer: u8,
+    pub screen: [bool; WIDTH * HEIGHT],
     pub stack: [u16; 16],
     pub stack_ptr: u16,
     pub key: [bool; 16],
@@ -51,9 +50,7 @@ impl Chip8 {
             v_register: [0; 16],
             i_register: 0,
             pc: 0x200,         // start at 0x200 per original chip-8
-            screen: [false; WIDTH*HEIGHT],
-            delay_timer: 0,
-            sound_timer: 0,
+            screen: [false; WIDTH * HEIGHT],
             stack: [0; 16],
             stack_ptr: 0,
             key: [false; 16],
@@ -71,9 +68,7 @@ impl Chip8 {
         self.v_register = [0; 16];
         self.i_register = 0;
         self.pc = 0x200;        // start at 0x200 per original chip-8
-        self.screen = [false; WIDTH*HEIGHT];
-        self.delay_timer = 0;
-        self.sound_timer = 0;
+        self.screen = [false; WIDTH * HEIGHT];
         self.stack = [0; 16];
         self.stack_ptr = 0;
         self.key = [false; 16];
@@ -160,7 +155,7 @@ impl Chip8 {
 
     // Clear display
     fn op_00e0(&mut self) {
-        self.screen = [false; WIDTH*HEIGHT];
+        self.screen = [false; WIDTH * HEIGHT];
         self.draw_flag = true;
     }
 
@@ -244,7 +239,7 @@ impl Chip8 {
     fn op_8xy5(&mut self, x: u16, y: u16) {
         let (result, overflow) = self.v_register[x as usize].overflowing_sub(self.v_register[y as usize]);
         self.v_register[x as usize] = result;
-        self.v_register[0xf] = if overflow {0} else {1};
+        self.v_register[0xf] = if overflow { 0 } else { 1 };
     }
 
     // Right shift VX by 1 bit. Set VF to the shifted out bit
@@ -259,7 +254,7 @@ impl Chip8 {
     fn op_8xy7(&mut self, x: u16, y: u16) {
         let (result, overflow) = self.v_register[y as usize].overflowing_sub(self.v_register[x as usize]);
         self.v_register[x as usize] = result;
-        self.v_register[0xf] = if overflow {0} else {1};
+        self.v_register[0xf] = if overflow { 0 } else { 1 };
     }
     // Left shift VX by 1 bit. Set VF to the shifted out bit
     //TODO This instruction is ambiguous, and only works on "modern' programs
@@ -295,18 +290,18 @@ impl Chip8 {
     // Draw
     fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
         let x_coord = (self.v_register[x as usize] % 64) as u16;
-        let y_coord = (self.v_register[y as usize] % 32 ) as u16;
+        let y_coord = (self.v_register[y as usize] % 32) as u16;
 
         self.v_register[0xF] = 0;
         for y_line in 0..n {
-            if (y_coord+y_line) >= 32 { break; }
+            if (y_coord + y_line) >= 32 { break; }
             let pixel = self.memory[(self.i_register + y_line) as usize] as u16;
             for x_line in 0..8_u16 {
-                if (x_coord+x_line) >= 64 { break; }
+                if (x_coord + x_line) >= 64 { break; }
                 if (pixel & (0x80 >> x_line)) != 0 {
                     // add modulus to x,y and remove 'clipping if' to have wrapping instead
-                    let x = (x_coord + x_line) ;// % 64;
-                    let y = (y_coord + y_line) ;// % 32;
+                    let x = x_coord + x_line;// % 64;
+                    let y = y_coord + y_line;// % 32;
 
                     // Check if the pixel will be turn off
                     if self.screen[(x + (y * 64)) as usize] {
@@ -386,7 +381,7 @@ impl Chip8 {
     //TODO This instruction is ambiguous, and only works on "modern' programs
     fn op_fx65(&mut self, x: u16) {
         for val in 0..=x {
-            self.v_register[val as usize] =  self.memory[(self.i_register + val) as usize];
+            self.v_register[val as usize] = self.memory[(self.i_register + val) as usize];
         }
     }
 }

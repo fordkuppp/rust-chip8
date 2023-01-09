@@ -1,4 +1,6 @@
-use cpal::{Host, Stream};
+use std::f32::consts::PI;
+
+use cpal::Stream;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 pub struct Audio {
@@ -40,10 +42,10 @@ impl Audio {
         let mut sample_clock = 0f32;
         let mut next_value = move || {
             sample_clock = (sample_clock + 1.0) % sample_rate;
-            (sample_clock * 440.0 * 2.0 * 3.141592 / sample_rate).sin()
+            (sample_clock * 440.0 * 2.0 * PI / sample_rate).sin()
         };
 
-        let err_fn = |err| println!("an error occurred on stream: {}", err).into();
+        let err_fn = |err| println!("an error occurred on stream: {}", err);
 
         let stream = device
             .build_output_stream(
