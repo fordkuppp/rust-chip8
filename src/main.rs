@@ -1,3 +1,4 @@
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::time::{Duration, Instant};
@@ -30,27 +31,27 @@ fn main() {
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
-    let stream = Audio::new();
-
-    // Initialize chip8 and load rom into memory TODO: take path from argument, open file from chip8 instance instead
+    let audio_stream = Audio::new();
     let mut chip8 = Chip8::new();
-    let mut rom = File::open("roms/chip8-test-suite.ch8").expect("Unable to open file");
-    // let mut rom = File::open("roms/chip8-test-rom-with-audio.ch8").expect("Unable to open file");
+    let mut rom = File::open("roms/IBM Logo.ch8").expect("Unable to open file");
+    let args: Vec<String> = env::args().collect();
+    if args.len() >= 2 {
+        rom = File::open(&args[1]).expect("Unable to open file");
+    }
+    let mut rom_buf = Vec::new();
+    rom.read_to_end(&mut rom_buf).unwrap();
+    chip8.load(&rom_buf);
 
-    let mut buf = Vec::new();
-    rom.read_to_end(&mut buf).unwrap();
-    chip8.load(&buf);
-
-    let timer_length = Duration::new(0, 16666666);
+    let timer_length = Duration::new(0, 16666666); // This is 60Hz
     event_loop.run(move |event, _, control_flow| {
         if chip8.draw_flag {
             window.request_redraw();
         }
 
         if chip8.timer.get_st() != 0 {
-            stream.play();
+            audio_stream.play();
         } else {
-            stream.pause();
+            audio_stream.pause();
         }
 
         match event {
@@ -197,7 +198,6 @@ fn main() {
             }
             _ => ()
         }
-        // Run next tick
         chip8.tick();
     });
 }

@@ -77,7 +77,7 @@ impl Chip8 {
         self.timer = Timer::new();
     }
 
-    // Load data into memory TODO: Take in path instead
+    // Load data into memory
     pub fn load(&mut self, data: &[u8]) {
         self.memory[0x200..(0x200 + data.len())].copy_from_slice(data);
     }
@@ -335,7 +335,6 @@ impl Chip8 {
 
     // Halt all instructions until key is pressed
     fn op_fx0a(&mut self, _x: u16) {
-        // TODO: Probably not the best way to do this
         if self.key == [false; 16] {
             self.pc -= 2;
         }
